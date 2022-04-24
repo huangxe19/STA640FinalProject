@@ -13,4 +13,4 @@ The question of interest is whether sample splitting and cross fitting helps in 
 
   Edward H Kennedy. (2019). Optimal doubly robust estimation of heterogeneous causal effects. ArXiv preprint. https://arxiv.org/abs/2004.14497
 
-Our data generation process is inspired by and modified from codes from (https://github.com/QuantLet/DataGenerationForCausalInference)
+Our data generation process is inspired by and modified from codes from https://github.com/QuantLet/DataGenerationForCausalInference
