@@ -3,7 +3,7 @@
 
 Authors: Xige Huang, Youran Wu
 
-**The code we use to implement sample-splitting and Bayesian methods are in /FUN/functions.R**
+**The code we use to implement sample-splitting and Bayesian methods are in FUN/functions.R**
 
 ### Abstract
 
