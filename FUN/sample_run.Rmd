@@ -1,0 +1,277 @@
+---
+title: "code"
+author: "Xige Huang, Youran Wu"
+date: '2022-04-24'
+output: pdf_document
+---
+
+```{r setup, message=F, warning=F, echo=F}
+library(tidyverse)
+library(dplyr)
+library(grf)
+library(caret)
+library(knitr)
+library(clusterGeneration)
+library(randomForest)
+library(mvtnorm)
+library(bartCause)
+library(dbarts)
+library(bcf)
+ggplot2::theme_set(ggplot2::theme_bw())
+knitr::opts_chunk$set(fig.align = 'center', cache = TRUE, warning = FALSE,
+                      message = FALSE, cache.lazy = FALSE)
+```
+
+
+Regarding 10 Data Generating Process:
+
+## A
+
+N=2000, p=50, homogeneous treatment effect $\tau = 0.5$, non-sparse X, RCT with balanced treatment/control $\mathbb{P}(Z=1)=0.5$
+
+### BART
+```{r}
+source('functions.R')
+ndata <- 20
+rmseA_cfit <- rep(NA, ndata)
+biasA_cfit <- rep(NA, ndata)
+sdA_cfit <- rep(NA, ndata)
+for (i in 1:ndata) {
+  dataA <- datagen(N=2000, k = 50, theta= 0.5, sparse=F, random_d = T, pd = 0.5)
+  A_bart_cfit <- bart_cfit(DF=dataA)
+  rmseA_cfit[i] <- RMSE(A_bart_cfit$ITE, dataA$theta, na.rm=T)
+  biasA_cfit[i] <- mean(abs(A_bart_cfit$ITE-dataA$theta), na.rm=T)
+  sdA_cfit[i] <- sd(A_bart_cfit$ITE, na.rm=T)
+}
+```
+
+```{r}
+rmseA <- rep(NA, ndata)
+biasA <- rep(NA, ndata)
+sdA <- rep(NA, ndata)
+for (i in 1: ndata) {
+  dataA <- datagen(N=2000, k = 50, theta= 0.5, sparse=F, random_d = T, pd = 0.5)
+  A_bart <- bart_naive(DF=dataA)
+  rmseA[i] <- RMSE(A_bart$x, dataA$theta, na.rm=T)
+  biasA[i] <- mean(abs(A_bart$x-dataA$theta), na.rm=T)
+  sdA[i] <- sd(A_bart$x, na.rm=T)
+}
+```
+
+### BART-PS
+
+```{r}
+rmseA_ps_cfit <- rep(NA, ndata)
+biasA_ps_cfit <- rep(NA, ndata)
+sdA_ps_cfit <- rep(NA, ndata)
+for (i in 1:ndata) {
+  dataA <- datagen(N=2000, k = 50, theta= 0.5, sparse=F, random_d = T, pd = 0.5)
+  A_bartps_cfit <- bartps_cfit(DF=dataA)
+  rmseA_ps_cfit[i] <- RMSE(A_bartps_cfit$ITE, dataA$theta,na.rm=T)
+  biasA_ps_cfit[i] <- mean(abs(A_bartps_cfit$ITE-dataA$theta),na.rm=T)
+  sdA_ps_cfit[i] <- sd(A_bart_cfit$ITE,na.rm=T)
+}
+```
+
+```{r}
+rmseA_ps <- rep(NA, ndata)
+biasA_ps <- rep(NA, ndata)
+sdA_ps <- rep(NA, ndata)
+for (i in 1: ndata) {
+  dataA <- datagen(N=2000, k = 50, theta= 0.5, sparse=F, random_d = T, pd = 0.5)
+  A_bartps <- bartps_naive(DF=dataA)
+  rmseA_ps[i] <- RMSE(A_bartps$x, dataA$theta, na.rm=T)
+  biasA_ps[i] <- mean(abs(A_bartps$x-dataA$theta), na.rm=T)
+  sdA_ps[i] <- sd(A_bartps$x, na.rm=T)
+}
+```
+
+### BCF
+
+```{r}
+rmseA_bcf <- rep(NA, ndata)
+biasA_bcf <- rep(NA, ndata)
+sdA_bcf <- rep(NA, ndata)
+for (i in 1: ndata) {
+  dataA <- datagen(N=2000, k = 50, theta= 0.5, sparse=F, random_d = T, pd = 0.5)
+  A_bcf <- bcf_naive(DF=dataA)
+  rmseA_ps[i] <- RMSE(A_bcf, dataA$theta, na.rm=T)
+  biasA_ps[i] <- mean(A_bcf-dataA$theta), na.rm=T)
+  sdA_ps[i] <- sd(A_bcf, na.rm=T)
+}
+```
+
+```{r}
+rmseA_bcf_cfit <- rep(NA, ndata)
+biasA_bcf_cfit <- rep(NA, ndata)
+sdA_bcf_cfit <- rep(NA, ndata)
+for (i in 1: ndata) {
+  dataA <- datagen(N=2000, k = 50, theta= 0.5, sparse=F, random_d = T, pd = 0.5)
+  A_bcf <- bcf_cfit(DF=dataA)
+  rmseA_bcf_cfit[i] <- RMSE(A_bcf, dataA$theta, na.rm=T)
+  biasA_bcf_[i] <- mean(A_bcf-dataA$theta), na.rm=T)
+  sdA_ps[i] <- sd(A_bcf, na.rm=T)
+}
+```
+
+
+```{r}
+resA <- data.frame(rmseA = rmseA,
+                   rmseA_cfit = rmseA_cfit,
+                   rmseA_ps = rmseA_ps,
+                   rmseA_ps_cfit = rmseA_ps_cfit,
+                   rmseA_bcf = rmseA_bcf
+                   rmseA_bcf_cfit = rmseA_bcf_cfit,
+                   
+                   biasA = biasA,
+                   biasA_cfit = biasA_cfit,
+                   biasA_ps = biasA_ps,
+                   biasA_ps_cfit = biasA_ps_cfit,
+                   biasA_bcf = biasA_bcf,
+                   biasA_bcf_cfit = biasA_bcf_cfit,
+                   
+                   sdA = sdA,
+                   sdA_cfit = sdA_cfit,
+                   sdA_ps = sdA_ps,
+                   sdA_ps_cfit = sdA_ps_cfit,
+                   sdA_bcf = sdA_bcf,
+                   sdA_bcf_cfit = sdA_bcf_cfit
+                   )
+#write.table(resA, 'resA.txt', row.names = F)
+```
+
+## B
+N=2000, p=50, homogeneous treatment effect $\tau = 0.5$, sparse X, RCT with imbalanced treatment/control $\mathbb{P}(Z=1)=0.2$
+```{r}
+dataB <- datagen(N=2000, k = 50, theta = 0.5, sparse = T,random_d = T, pd = 0.2)
+```
+
+## C
+N=2000, p=50, heterogeneous treatment effect, non-sparse X, observational
+```{r}
+dataC <- datagen(N=2000, k = 50, random_d = F, pd = 0.2, theta = 'het', sparse = F)
+```
+
+## D
+N=2000, p=10, heterogeneous treatment effect, non-sparse X, RCT pd=0.5
+```{r}
+dataD <- datagen(N=2000, k = 10, random_d = T, pd = 0.5, theta = 'het', sparse = F)
+```
+
+## E
+N=2000, p=10, homogenous treatment effect $\tau=0.5$, sparse X, observational
+```{r}
+dataE <- datagen(N=2000, k = 10, random_d = F, pd = 0.5, theta = 0.5, sparse = T)
+```
+
+
+## F
+N=500, p=50, homogeneous treatment effect $\tau = 0.5$, non-sparse X, RCT with balanced treatment/control $\mathbb{P}(Z=1)=0.5$
+```{r}
+dataF <- datagen(N=500, k = 50, theta= 0.5, sparse=F, random_d = T, pd = 0.5)
+```
+
+
+## G
+N=500, p=50, homogeneous treatment effect $\tau = 0.5$, non-sparse X, RCT with imbalanced treatment/control $\mathbb{P}(Z=1)=0.2$
+```{r}
+dataG <- datagen(N = 500, k = 50, theta = 0.5, sparse = F, random_d = T, pd = 0.2)
+```
+
+## H
+N=500, p=50, heterogeneous treatment effect, sparse X, observational
+```{r}
+dataH <- datagen(N = 500, k = 50, theta = "het", sparse = T, random_d = F)
+```
+
+## I
+N=500, p=10, heterogeneous treatment effect, non-sparse X, RCT pd=0.5
+```{r}
+dataB <- datagen(N = 500, k = 10, random_d = T, pd = 0.2, theta = 0.5, sparse = F)
+```
+
+## J
+N=500, p=10, homogenous treatment effect $\tau=0.5$, sparse X, observational
+```{r}
+dataB <- datagen(N=500, k = 10, random_d = F, pd = 0.5, theta = "het", sparse = T)
+```
+
+
+
+```{r}
+source('functions.R')
+ndata <- 15
+rmseB_cfit <- rep(NA, ndata)
+biasB_cfit <- rep(NA, ndata)
+sdB_cfit <- rep(NA, ndata)
+for (i in 1:ndata) {
+  dataB <- datagen(N=500, k = 10, random_d = F, pd = 0.5, theta = "het", sparse = T)
+  B_bart_cfit <- bart_cfit(DF=dataB)
+  rmseB_cfit[i] <- RMSE(B_bart_cfit$ITE, dataB$theta, na.rm=T)
+  biasB_cfit[i] <- mean(abs(B_bart_cfit$ITE-dataB$theta), na.rm=T)
+  sdB_cfit[i] <- sd(B_bart_cfit$ITE, na.rm=T)
+}
+```
+ 
+```{r}
+rmseB <- rep(NA, ndata)
+biasB <- rep(NA, ndata)
+sdB <- rep(NA, ndata)
+for (i in 1: ndata) {
+  dataB <- datagen(N=500, k = 10, random_d = F, pd = 0.5, theta = "het", sparse = T)
+  B_bart <- bart_naive(DF=dataB)
+  rmseB[i] <- RMSE(B_bart$x, dataB$theta, na.rm=T)
+  biasB[i] <- mean(abs(B_bart$x-dataB$theta), na.rm=T)
+  sdB[i] <- sd(B_bart$x, na.rm=T)
+}
+```
+ 
+### BART-PS
+ 
+```{r}
+rmseB_ps_cfit <- rep(NA, ndata)
+biasB_ps_cfit <- rep(NA, ndata)
+sdB_ps_cfit <- rep(NA, ndata)
+for (i in 1:ndata) {
+  dataB <- datagen(N=500, k = 10, random_d = F, pd = 0.5, theta = "het", sparse = T)
+  B_bartps_cfit <- bartps_cfit(DF=dataB)
+  rmseB_ps_cfit[i] <- RMSE(B_bartps_cfit$ITE, dataB$theta,na.rm=T)
+  biasB_ps_cfit[i] <- mean(abs(B_bartps_cfit$ITE-dataB$theta),na.rm=T)
+  sdB_ps_cfit[i] <- sd(B_bart_cfit$ITE,na.rm=T)
+}
+```
+ 
+ 
+```{r}
+rmseB_ps <- rep(NA, ndata)
+biasB_ps <- rep(NA, ndata)
+sdB_ps <- rep(NA, ndata)
+for (i in 1: ndata) {
+  dataB <- datagen(N=500, k = 10, random_d = F, pd = 0.5, theta = "het", sparse = T)
+  B_bartps <- bartps_naive(DF=dataB)
+  rmseB_ps[i] <- RMSE(B_bartps$x, dataB$theta, na.rm=T)
+  biasB_ps[i] <- mean(abs(B_bartps$x-dataB$theta), na.rm=T)
+  sdB_ps[i] <- sd(B_bartps$x, na.rm=T)
+}
+```
+ 
+```{r}
+resB <- data.frame(rmseE = rmseB,
+                   rmseE_cfit = rmseB_cfit,
+                   rmseE_ps = rmseB_ps,
+                   rmseE_ps_cfit = rmseB_ps_cfit,
+                  
+                   biasE = biasB,
+                   biasE_cfit = biasB_cfit,
+                   biasE_ps = biasB_ps,
+                   biasE_ps_cfit = biasB_ps_cfit,
+                  
+                   sdE = sdB,
+                   sdE_cfit = sdB_cfit,
+                   sdE_ps = sdB_ps,
+                   sdE_ps_cfit = sdB_ps_cfit
+                   )
+write.table(resB, 'resJ.txt', row.names = F)
+```
+
+
